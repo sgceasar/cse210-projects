@@ -1,11 +1,129 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
-<Project Sdk="Microsoft.NET.Sdk">
+// Reference Class
+public class Reference
+{
+    public string Book { get; }
+    public int StartChapter { get; }
+    public int StartVerse { get; }
+    public int? EndChapter { get; }
+    public int? EndVerse { get; }
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>disable</Nullable>
-  </PropertyGroup>
+    public Reference(string book, int startChapter, int startVerse, int? endChapter = null, int? endVerse = null)
+    {
+        Book = book;
+        StartChapter = startChapter;
+        StartVerse = startVerse;
+        EndChapter = endChapter;
+        EndVerse = endVerse;
+    }
 
-</Project>
+    public override string ToString()
+    {
+        if (EndChapter.HasValue && EndVerse.HasValue)
+        {
+            return $"{Book} {StartChapter}:{StartVerse}-{EndChapter}:{EndVerse}";
+        }
+        return $"{Book} {StartChapter}:{StartVerse}";
+    }
+}
+
+// Word Class
+public class Word
+{
+    private string _text;
+    public bool IsHidden { get; private set; }
+
+    public Word(string text)
+    {
+        _text = text;
+        IsHidden = false;
+    }
+
+    public void Hide()
+    {
+        IsHidden = true;
+    }
+
+    public override string ToString()
+    {
+        return IsHidden ? new string('_', _text.Length) : _text;
+    }
+}
+
+// Scripture Class
+public class Scripture
+{
+    public Reference Reference { get; }
+    private List<Word> _words;
+
+    public Scripture(Reference reference, string text)
+    {
+        Reference = reference;
+        _words = text.Split(' ').Select(word => new Word(word)).ToList();
+    }
+
+    public void HideRandomWords(int count)
+    {
+        Random random = new Random();
+        var visibleWords = _words.Where(word => !word.IsHidden).ToList();
+
+        if (visibleWords.Count == 0)
+            return;
+
+        for (int i = 0; i < count; i++)
+        {
+            var word = visibleWords[random.Next(visibleWords.Count)];
+            word.Hide();
+            visibleWords.Remove(word);
+
+            if (visibleWords.Count == 0)
+                break;
+        }
+    }
+
+    public bool AreAllWordsHidden()
+    {
+        return _words.All(word => word.IsHidden);
+    }
+
+    public void Display()
+    {
+        Console.Clear();
+        Console.WriteLine(Reference);
+        Console.WriteLine(string.Join(" ", _words));
+    }
+}
+
+// Program Class
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Example scripture
+        var reference = new Reference("Proverbs", 3, 5);
+        var scriptureText = "Trust in the Lord with all thine heart and lean not unto thine own understanding.";
+        var scripture = new Scripture(reference, scriptureText);
+
+        while (true)
+        {
+            scripture.Display();
+
+            if (scripture.AreAllWordsHidden())
+            {
+                Console.WriteLine("\nCongratulations! You've memorized the scripture.");
+                break;
+            }
+
+            Console.WriteLine("\nPress Enter to hide words or type 'quit' to exit.");
+            string input = Console.ReadLine();
+
+            if (input?.ToLower() == "quit")
+                break;
+
+            scripture.HideRandomWords(2);
+        }
+    }
+}
